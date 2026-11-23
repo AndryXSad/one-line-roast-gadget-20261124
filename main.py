@@ -40,8 +40,19 @@ def main():
         sys.exit("roast fails the gate: " + "; ".join(problems))
     out_dir = os.environ.get("MAKEFUN_OUTPUT_DIR", "/output")
     os.makedirs(out_dir, exist_ok=True)
-    with open(os.path.join(out_dir, "entry.txt"), "w", encoding="utf-8") as handle:
+    path = os.path.join(out_dir, "entry.txt")
+    with open(path, "w", encoding="utf-8") as handle:
         handle.write(LINE)
+    # Round-trip check: read back what was written and re-apply the gate,
+    # so a silent write failure (disk full, wrong encoding) fails loudly
+    # here instead of shipping an empty or truncated entry to the judge.
+    with open(path, encoding="utf-8") as handle:
+        written = handle.read()
+    if written != LINE:
+        sys.exit("entry.txt round-trip mismatch: written text differs")
+    problems = check_line(written)
+    if problems:
+        sys.exit("written roast fails the gate: " + "; ".join(problems))
 
 
 if __name__ == "__main__":
